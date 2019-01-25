@@ -66,7 +66,13 @@ class Store:
         if next_state is not self.state:
             self._state = next_state
             for listener in self.listeners:
-                listener()
+                if (
+                    asyncio.iscoroutinefunction(listener) or
+                    asyncio.iscoroutinefunction(getattr(listener, '__call__', lambda: None))
+                ):
+                    yield from listener()
+                else:
+                    listener()
         future = asyncio.Future(loop=self.loop)
         future.set_result(action)
         return future
